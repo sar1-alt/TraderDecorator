@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Threading.Tasks;
 using Unit8_SRP_F24.Contracts;
 
 namespace Unit8_SRP_F24;
@@ -6,10 +7,11 @@ namespace Unit8_SRP_F24;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         ILogger consoleLogger = new ConsoleLogger();
         LoggerXMLDecorator logger = new LoggerXMLDecorator(consoleLogger);  // decorate the console logger with XML logging functionality
+        AdjustTradeDataProvider adjustTradeDataProvider = new AdjustTradeDataProvider(new URLTradeDataProvider("http://raw.githubusercontent.com/tgibbons-css/CIS3285_Unit9_F24/refs/heads/master/SingleResponsibilityPrinciple/trades.txt", logger), logger);
 
         // get the local, embedded trades.txt file
         var tradeStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Unit8_SRP_F24.trades.txt");
@@ -30,6 +32,7 @@ class Program
         ITradeDataProvider fileProvider = new StreamTradeDataProvider(tradeStream, logger);
         ITradeDataProvider URLProvider = new URLTradeDataProvider(tradeURL, logger);
         ITradeDataProvider RestfulAPIProvider = new RestfulTradeDataProvider(restfulURL, logger);
+        ITradeDataProvider AdjustedURLProvider = new AdjustTradeDataProvider(URLProvider, logger);
 
         ITradeMapper tradeMapper = new SimpleTradeMapper();
         ITradeValidator tradeValidator = new SimpleTradeValidator(logger);
@@ -38,10 +41,11 @@ class Program
 
         // set up the trade processor with different trade data providers
         //var tradeProcessor = new TradeProcessor(fileProvider, tradeParser, tradeStorage);
-        var tradeProcessor = new TradeProcessor(URLProvider, tradeParser, tradeStorage);
+        var tradeProcessor = new TradeProcessor(AdjustedURLProvider, tradeParser, tradeStorage);
+        //var tradeProcessor = new TradeProcessor(URLProvider, tradeParser, tradeStorage);
         //var tradeProcessor = new TradeProcessor(RestfulAPIProvider, tradeParser, tradeStorage);
 
-        tradeProcessor.ProcessTrades();
+        await tradeProcessor.ProcessTrades();
 
     }
 }
